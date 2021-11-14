@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+
+        canvas {
+            width: 100%;
+        }
+
+        div {
+            width: 49%;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <p id="testes"></p>
+
+    <div><canvas id="dividir_e_conquistar" width="1000" height="1000" style="border: 1px solid gray">
+            Your browser does not support the HTML5 canvas tag.</canvas></div>
+    <div><canvas id="forca_bruta" width="1000" height="1000" style="border: 1px solid gray">
+            Your browser does not support the HTML5 canvas tag.</canvas></div>
+
+    <p id="menor_distancia_dividir"></p>
+    <p id="menor_distancia_forca"></p>
+
+
+    <script>
+        /* Testes */
+        var testes = document.getElementById("testes");
+        var menor_distancia_dividir = document.getElementById("menor_distancia_dividir")
+        var menor_distancia_forca = document.getElementById("menor_distancia_forca")
+
+        /* Definindo a variável do Canvas no JavaScript */
+        var c = document.getElementById("dividir_e_conquistar");
+        var ctx = c.getContext("2d");
+
+        var c_forca_bruta = document.getElementById("forca_bruta");
+        var ctx_forca_bruta = c_forca_bruta.getContext("2d");
+
+        /* Definindo variáveis iniciais */
+        var min = 0;
+        var max_largura = 600;
+        var max_altura = 600;
+        var numero_de_pontos = 20;
+        var coordenadas_pontos = [];
+        var mediana_x = [];
+
+        /* Variáveis de controle de tempo */
+        var tempo = 0;
+        var velocidade = 300;
+
+        /* Definindo tamanho da imagem Canvas */
+        c.setAttribute("width", max_largura);
+        c.setAttribute("height", max_altura);
+
+        /* Definindo tamanho da imagem Canvas para o "calculo com força bruta" */
+        c_forca_bruta.setAttribute("width", max_largura);
+        c_forca_bruta.setAttribute("height", max_altura);
+
+
+        /* Definindo valores iniciais de variáveis */
+        var menor_distancia = [0, 0, c.width + c.height];
+        var menor_distancia_todos = [0, 0, c.width + c.height];
+        var menor_distancia_esquerda = [0, 0, c.width + c.height];
+        var menor_distancia_direita = [0, 0, c.width + c.height];
+        var menor_distancia_meio = [0, 0, c.width + c.height];
+
+        
+
+        /* Variáveis de cor */
+        var cor = ["yellow", "yellow", "yellow"];
+
+        /* Criando a lista com os pontos aleatórios */
+        for (let i = 0; i < numero_de_pontos; ++i) {
+
+            let x = Math.random() * (max_largura - min) + min;
+            let y = Math.random() * (max_altura - min) + min;
+            coordenadas_pontos.push([x, y])
+            mediana_x.push(x)
+        }
+
+        /* Ordenando a lista pelo eixo x */
+        coordenadas_pontos.sort((a, b) => a[0] - b[0]);
+
+        /* Encontrando a mediana do eixo x dos pontos */
+        mediana_x.sort((a, b) => a - b);
+        centro_comprimento_x = mediana_x.length / 2
+
+        if ((mediana_x.length % 2) == 0) {
+            mediana_x = (mediana_x[centro_comprimento_x] + mediana_x[(centro_comprimento_x - 1)]) / 2
+        } else {
+            mediana_x = mediana_x[Math.ceil(centro_comprimento_x)]
+        }
+
+
+        /* Lista de pontos para o "calculo na força bruta" de cada lado da mediana */
+        var coordenadas_pontos_esquerda = coordenadas_pontos.slice(0, Math.floor(coordenadas_pontos.length / 2))
+        var coordenadas_pontos_direita = coordenadas_pontos.slice(Math.ceil(coordenadas_pontos.length / 2), coordenadas_pontos.length)
+
+        /* Lista de pares de pontos para o "calculo na força bruta" de cada lado da mediana */
+        var pontos_calcular_esquerda = lista_pontos_forca_bruta(coordenadas_pontos_esquerda)
+        var pontos_calcular_direita = lista_pontos_forca_bruta(coordenadas_pontos_direita)
+
+        /* Tempo de "calculo na força bruto" de cada lado da mediana */
+        var tempo_calculo_esquerda = pontos_calcular_esquerda.length
+        var tempo_calculo_direita = pontos_calcular_direita.length
+
+        /* Lista e tempo para "calcular na força bruta" todos os pontos */
+        var pontos_calcular_todos = lista_pontos_forca_bruta(coordenadas_pontos)
+        var tempo_calculo_todos = pontos_calcular_todos.length
+
+
+        /* Função principal do programa, para animar o algoritmo */
+        function animar() {
+            /* Apaga a tela e desenha todos os pontos do Canvas */
+            ctx.clearRect(0, 0, c.width, c.height); // Apaga todo o desenho para desenar o próximo "frame"
+            desenhar_todos_os_pontos() // Desenha todos os pontos a cada atualização
+
+            /* Apaga a tela e desenha todos os pontos do Canvas */
+            ctx_forca_bruta.clearRect(0, 0, c.width, c.height); // Apaga todo o desenho para desenar o próximo "frame"
+            desenhar_todos_os_pontos(ctx_forca_bruta) // Desenha todos os pontos a cada atualização
+
+            if (tempo > 0) {
+                /* Desenha a linha da mediana*/
+                desenhar_linha([mediana_x, 0], [mediana_x, c.height], "gray", "solid", 1);
+
+
+                if (tempo > tempo_calculo_direita + tempo_calculo_esquerda + 2) {
+                    /* Desenha as linhas verticais */
+                    for (i = -1; i <= 1; i += 0.5) {
+                        let distancia_do_centro = mediana_x + (menor_distancia[2] * i)
+                        desenhar_linha([distancia_do_centro, 0], [distancia_do_centro, c.height], "gray", "solid", 1);
+                    }
+
+                    /* Desenha as linhas horizontais */
+                    for (i = 1; i <= (c.height / (menor_distancia[2] / 2)); i += 1) {
+
+                        let distancia_y_linha = (menor_distancia[2] / 2) * i
+                        desenhar_linha([mediana_x - menor_distancia[2], distancia_y_linha], [mediana_x + menor_distancia[2], distancia_y_linha], "gray", "solid", 1);
+
+                    }
+
+                    /* Ordena os pontos pelo eixo y */
+                    var lista_calcular_pontos_centro = []
+                    var pontos_ordenados_y = coordenadas_pontos.slice(0, coordenadas_pontos.length)
+                    pontos_ordenados_y = pontos_ordenados_y.sort((a, b) => a[1] - b[1]);
+                    var pontos_y_filtrados = []
+
+                    /* Filtra os pontos que não estão na faixa de interesse central */
+                    for (i = 0; i < pontos_ordenados_y.length; i += 1) {
+                        if ((pontos_ordenados_y[i][0] > (mediana_x - menor_distancia[2])) && (pontos_ordenados_y[i][0] < (mediana_x + menor_distancia[2])))
+                            pontos_y_filtrados.push(pontos_ordenados_y[i])
+                    }
+
+                    /* Desenha os pontos filtrados que estão na faixa de interesse central */
+                    for (i = 0; i < pontos_y_filtrados.length; i += 1) {
+                        pintar_ponto(pontos_y_filtrados[i], "blue")
+                    }
+
+                    /* Cria a lista com os pares de pontos para verificar na faixa de interesse central */
+                    for (let i = 0; i < pontos_y_filtrados.length; i += 1) {
+
+                        for (let j = 1; j <= 7; j += 1) {
+                            if (((i + j) < pontos_y_filtrados.length)) {
+                                mesmo_lado_mediana = ((pontos_y_filtrados[i + j][0] - mediana_x) >= 0) === ((pontos_y_filtrados[i][0] - mediana_x) >= 0)
+                                if ((menor_distancia[2] > (pontos_y_filtrados[i + j][1] - pontos_y_filtrados[i][1])) && (mesmo_lado_mediana == false)) {
+                                    lista_calcular_pontos_centro.push([pontos_y_filtrados[i + j], pontos_y_filtrados[i]])
+                                }
+                            }
+                        }
+
+
+                    }
+
+                    /* Calcula as distancia dos pontos na faixa de interesse central e anima */
+                    numero_do_par = tempo - (tempo_calculo_direita + tempo_calculo_esquerda + 3)
+                    if (numero_do_par < lista_calcular_pontos_centro.length) {
+                        let distancia = conexao_distancia(lista_calcular_pontos_centro[numero_do_par][0], lista_calcular_pontos_centro[numero_do_par][1], cor[2])
+                        if (distancia < menor_distancia_meio[2]) {
+                            menor_distancia_meio = [lista_calcular_pontos_centro[numero_do_par][0], lista_calcular_pontos_centro[numero_do_par][1], distancia]
+                        }
+                    }
+
+                    desenhar_conexao(menor_distancia_meio[0], menor_distancia_meio[1], cor[2])
+
+                    if (menor_distancia_meio[2] < menor_distancia[2]) {
+                        cor = ["yellow", "yellow", "green"]
+                    }
+
+                    
+                }
+
+                /* Acha a menor distância dos pontos na esquerda na "força bruta" e anima o processo */
+                if (tempo < tempo_calculo_esquerda) {
+                    let posicao = tempo
+                    let distancia = conexao_distancia(pontos_calcular_esquerda[posicao][0], pontos_calcular_esquerda[posicao][1], "red");
+
+                    if (distancia < menor_distancia_esquerda[2]) {
+                        menor_distancia_esquerda = [pontos_calcular_esquerda[posicao][0], pontos_calcular_esquerda[posicao][1], distancia]
+                        menor_distancia = menor_distancia_esquerda
+                    }
+                }
+                desenhar_conexao(menor_distancia_esquerda[0], menor_distancia_esquerda[1], cor[0])
+
+                /* Acha a menor distância dos pontos na direita na "força bruta" e anima o processo */
+                if ((tempo >= tempo_calculo_esquerda) && (tempo - tempo_calculo_esquerda < tempo_calculo_direita)) {
+                    let posicao = tempo - tempo_calculo_esquerda
+                    let distancia = conexao_distancia(pontos_calcular_direita[posicao][0], pontos_calcular_direita[posicao][1], "red");
+
+                    if (distancia < menor_distancia_direita[2]) {
+                        menor_distancia_direita = [pontos_calcular_direita[posicao][0], pontos_calcular_direita[posicao][1], distancia]
+                        menor_distancia = menor_distancia_direita
+                    }
+                }
+                if (tempo > tempo_calculo_esquerda) {
+                    desenhar_conexao(menor_distancia_direita[0], menor_distancia_direita[1], cor[1])
+                }
+
+                /* Descobre a menor distância entre a menor da esquerda e a menor da direita, altera a cor das conexões e atualiza a menor distância */
+                if (tempo == tempo_calculo_direita + tempo_calculo_esquerda + 1) {
+                    if (menor_distancia_direita[2] < menor_distancia_esquerda[2]) {
+                        cor = ["yellow", "green", "yellow"]
+                        menor_distancia = menor_distancia_direita
+                    } else {
+                        cor = ["green", "yellow", "yellow"]
+                        menor_distancia = menor_distancia_esquerda
+                    }
+                }
+
+                /* Escreve a menor distância atual */
+                menor_distancia_dividir.textContent = "Menor distancia (metodo de dividir e conquistar): " + Math.round(menor_distancia[2] * 100) /100
+
+
+                /* Acha a menor distância dos pontos na esquerda na "força bruta" e anima o processo */
+                if (tempo < tempo_calculo_todos) {
+                    let posicao = tempo
+                    let distancia = conexao_distancia(pontos_calcular_todos[posicao][0], pontos_calcular_todos[posicao][1], "red", ctx_forca_bruta);
+
+                    if (distancia < menor_distancia_todos[2]) {
+                        menor_distancia_todos = [pontos_calcular_todos[posicao][0], pontos_calcular_todos[posicao][1], distancia]
+                    }
+                }
+                desenhar_conexao(menor_distancia_todos[0], menor_distancia_todos[1], "green", ctx_forca_bruta)
+                menor_distancia_forca.textContent = "Menor distancia (metodo de força bruta): " + Math.round(menor_distancia_todos[2] * 100) /100
+
+
+            }
+
+            /* Controle de tempo da função de animação */
+            tempo = tempo + 1; // Soma um a contagem de atualizações ("tempo")
+            setTimeout(animar, velocidade); // Define o timeout para a animação atualizar a cada 1000 milisegundos
+        }
+
+        /* Criar lista de pontos para o "calculo na força bruta" */
+        function lista_pontos_forca_bruta(lista_pontos) {
+            let lista_pares_de_pontos = []
+            for (let i = 0; i < (lista_pontos.length - 1); i += 1) {
+                for (let j = 1; j < (lista_pontos.length - i); j += 1) {
+                    lista_pares_de_pontos.push([lista_pontos[i], lista_pontos[i + j]])
+                }
+            }
+            return lista_pares_de_pontos
+        }
+
+        /* Função que desenha todos os pontos gerados */
+        function desenhar_todos_os_pontos(contexto = ctx) {
+            for (let i = 0; i < coordenadas_pontos.length; i++) {
+                pintar_ponto(coordenadas_pontos[i], "white", contexto)
+            }
+        }
+
+
+        /* Função que desenha uma linha entre dois pontos */
+        function desenhar_linha(inicio, fim, cor, estilo, espessura, contexto = ctx) {
+            if (estilo == "dashed") {
+                contexto.setLineDash([5, 5]);
+            } else {
+                contexto.setLineDash([]);
+            }
+            contexto.beginPath()
+            contexto.lineWidth = espessura;
+            contexto.moveTo(inicio[0], inicio[1]);
+            contexto.lineTo(fim[0], fim[1]);
+            contexto.strokeStyle = cor;
+            contexto.stroke();
+        }
+
+        /* Função para pintar um único ponto */
+        function pintar_ponto(ponto, cor, contexto = ctx) {
+            contexto.beginPath();
+            contexto.arc(ponto[0], ponto[1], 5, 0, 2 * Math.PI);
+            contexto.fillStyle = cor;
+            contexto.fill();
+
+        }
+
+        /* Função para desenhar uma conexao entre dois pontos - Pintá-los e desenhar a linha entre eles */
+        function desenhar_conexao(ponto1, ponto2, cor, contexto = ctx) {
+            pintar_ponto(ponto1, cor, contexto);
+            pintar_ponto(ponto2, cor, contexto);
+            desenhar_linha(ponto1, ponto2, cor, "solid", 2, contexto)
+        }
+
+        /* Função para calcular a distância entre dois pontos e retorná-la */
+        function calcular_distancia(ponto1, ponto2) {
+            return Math.sqrt(Math.pow((ponto1[0] - ponto2[0]), 2) + Math.pow((ponto1[1] - ponto2[1]), 2))
+        }
+
+        function conexao_distancia(ponto1, ponto2, cor, contexto = ctx) {
+            desenhar_conexao(ponto1, ponto2, "red", contexto)
+            return calcular_distancia(ponto1, ponto2, contexto)
+        }
+
+        /* Chama a função para animar o algoritmo*/
+        animar();
+    </script>
+
+</body>
+
+</html>
