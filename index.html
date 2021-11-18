@@ -1,61 +1,221 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html> <!-- Tipo do documento -->
+<html lang="pt-br">
+<!-- Idioma do documento -->
+
+<!-- Pré definições do documento -->
 
 <head>
+    <!-- Codificação da página -->
+    <meta charset="UTF-8">
+
+    <!-- CSS -->
     <style>
         body {
             background-color: black;
             color: white;
+            font-family: sans-serif;
         }
 
         canvas {
-            width: 100%;
+            width: 90%;
         }
 
         div {
             width: 49%;
+            text-align: center;
             display: inline-block;
+        }
+
+        #div-externa {
+            width: 80%;
+            margin-left: 10%;
+            margin-right: 10%;
+            display: block;
+            align-items: center;
+            text-align: justify;
+            justify-content: center;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 95%;
+            height: 20px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            margin-bottom: 0.6em;
+            margin-right: 5%;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #04AA6D;
+            cursor: pointer;
+        }
+
+        .esquerda {
+            text-align: left;
         }
     </style>
 </head>
 
 <body>
 
+    <!-- Parágrafo para testes -->
     <p id="testes"></p>
 
-    <div><canvas id="dividir_e_conquistar" width="1000" height="1000" style="border: 1px solid gray">
-            Your browser does not support the HTML5 canvas tag.</canvas></div>
-    <div><canvas id="forca_bruta" width="1000" height="1000" style="border: 1px solid gray">
-            Your browser does not support the HTML5 canvas tag.</canvas></div>
+    <!-- Div externa no corpo do documento para criar a margem e o alinhamento desejados -->
+    <div id="div-externa">
 
-    <p id="menor_distancia_dividir"></p>
-    <p id="menor_distancia_forca"></p>
+        <!-- Texto de explicação - Introdução -->
+        <h2>Par de pontos mais próximos</h2>
+        <p>Esse algoritmo serve para ilustrar o problema do par mais próximo, que consiste em encontrar o par de pontos
+            mais
+            próximo dentre um conjunto de pontos estático aleatório.</p>
+        <p>Podemos ver abaixo duas forma de resolver esse problema:</p>
+        <ul>
+            <li>A direita, temos o método mais fácil de se pensar, que é basicamente na "força bruta", isso é, são
+                calculadas todas as possibilidades e comparadas todas as distâncias entre todos os pares de pontos que
+                podemos formar, para encontrar o mais próximo.</li>
+            <li>A esquerda, temos uma estratégia que propõe ser uma solução mais eficiente, um algoritmo chamado de
+                "dividir
+                e conquistar". Nesse algoritmo, primeiro devemos dividir o plano em dois, traçando uma mediana com
+                metade
+                dos pontos do lado esquerdo e a outra metade do lado direito. Com isso, calculamos o par de pontos mais
+                próximo em cada uma das metades (na "força bruta" mesmo, mas com apenas com metade dos ponto por vez).
+                Depois, vamos comparar o par mais próximo dentre os dois selecionados, um de cada lado e, com isso,
+                criar
+                uma faixa central quadriculada, com a distância "d" para cada lado da mediana e um quadriculado interno
+                de tamanho
+                (d/2) por (d/2). Dessa forma, podemos verificar só os pontos nessa faixa para terminar o nosso
+                algoritmo,
+                porém não precisamos comparar todos. Nós ordenamos esses pontos pelo eixo y e depois caminhamos em ordem
+                pelos pontos, sendo necessário calcular no máximo os próximos 7 (às vezes, nem isso), pois não
+                precisamos
+                calcular os pontos que estiverem do mesmo lado da mediana, nem aqueles que tiverem uma diferença da
+                posição
+                no eixo y maior que "d". Dessa forma, podemos ver na animação que temos um algoritmo consideravelmente
+                mais
+                eficiente.</li>
+        </ul>
+
+        <!-- Slide Bars para o ajuste do número de pontos e velocidade -->
+        <div>
+            <input type="range" min="0" max="1000" value="500" class="slider" id="slide_velocidade">
+            <br>
+            <input type="range" min="0" max="300" value="20" class="slider" id="slide_quantidade_pontos">
+            <br>
+        </div>
+
+        <!-- Texto com o valor atual das variáveis ajustáveis -->
+        <div class="esquerda">
+            <p id="texto_velociade"></p>
+            <p id="texto_quantidade_pontos"></p>
+        </div>
+
+        <!-- Explicações para iniciar a animação -->
+        <ul>
+            <li>
+                <p>Pressione Enter para iniciar</p>
+            </li>
+            <li>
+                <p>Pressione R para reiniciar</p>
+            </li>
+        </ul>
+        <div>
+            <p>Dividir e conquistar</p>
+        </div>
+        <div>
+            <p> Força bruta</p>
+        </div>
+
+        <!-- Canvas -->
+        <div><canvas id="dividir_e_conquistar" width="1000" height="1000" style="border: 1px solid gray">
+                Your browser does not support the HTML5 canvas tag.</canvas></div>
+        <div><canvas id="forca_bruta" width="1000" height="1000" style="border: 1px solid gray">
+                Your browser does not support the HTML5 canvas tag.</canvas></div>
+
+        <!-- Menores distancias atuais encontradas -->
+        <div>
+            <p id="menor_distancia_dividir"></p>
+        </div>
+        <div>
+            <p id="menor_distancia_forca"></p>
+        </div>
+    </div>
 
 
+    <!-- JavaScript -->
     <script>
-        /* Testes */
+        /* Variáveis para inserir texto */
         var testes = document.getElementById("testes");
         var menor_distancia_dividir = document.getElementById("menor_distancia_dividir")
         var menor_distancia_forca = document.getElementById("menor_distancia_forca")
+        var texto_velociade = document.getElementById("texto_velociade")
+        var texto_quantidade_pontos = document.getElementById("texto_quantidade_pontos")
 
-        /* Definindo a variável do Canvas no JavaScript */
+        /* Definindo a variável do Canvas do algoritmo de dividir e conquistar no JavaScript */
         var c = document.getElementById("dividir_e_conquistar");
         var ctx = c.getContext("2d");
 
+        /* Definindo a variável do Canvas do algoritmo de calculo na "força bruta" no JavaScript */
         var c_forca_bruta = document.getElementById("forca_bruta");
         var ctx_forca_bruta = c_forca_bruta.getContext("2d");
 
         /* Definindo variáveis iniciais */
-        var min = 0;
-        var max_largura = 600;
-        var max_altura = 600;
-        var numero_de_pontos = 20;
+        var min = 0; // Mínimo de altura e largura do Canvas
+        var max_largura = 600; // Máximo de largura do Canvas
+        var max_altura = 600; // Máximo de altura do Canvas
+        var numero_de_pontos = 20; // Número inicial de pontos
+        texto_quantidade_pontos.textContent = "Quantidade de pontos: " + numero_de_pontos // Imprime a quantidade inicial de pontos
         var coordenadas_pontos = [];
         var mediana_x = [];
 
         /* Variáveis de controle de tempo */
-        var tempo = 0;
-        var velocidade = 300;
+        var tempo = 0; // Tempo inicial
+        var velocidade = 500; // Velocidade inicial
+        texto_velociade.textContent = "Delay: " + velocidade // Imprime a velociade (delay) inicial
+
+        /* Slide de controle de velocidade */
+        var slide_velocidade = document.getElementById("slide_velocidade");
+        slide_velocidade.oninput = function () {
+            velocidade = 1000 - this.value; // Atualiza a velocidade
+            texto_velociade.textContent = "Delay: " + velocidade // Imprime a velocidade (delay)
+        }
+
+        /* Slide de controle de número de pontos */
+        var slide_quantidade_pontos = document.getElementById("slide_quantidade_pontos");
+        slide_quantidade_pontos.oninput = function () {
+            numero_de_pontos = this.value; // Atualiza o número de pontos
+            texto_quantidade_pontos.textContent = "Quantidade de pontos: " + numero_de_pontos // Imprime o número de pontos definido
+        }
+
+        /* Variável para controle se o algoritmo já foi animado */
+        var iniciado = 0
+
+        /* Funções referêntes as ações com o teclado */
+        document.onkeydown = function () {
+            var botao_pressionado = event.key; // Armazena o botão pressionado na variável botão pressionado
+
+            if ((botao_pressionado == "Enter") && (iniciado == 0)) { // Se o botão pressionador for "s"
+                iniciado = 1 // Salva que a animação já foi iniciada, para não ser iniciada duas vezes e não ter problema com a velocidade
+                tempo = 0; // Define o tempo para 0
+                reiniciar() // Reinicia as variáveis iniciais de acordo com os ajustes do usuário
+                animar(); // Inicia a animação e o algoritmo
+            }
+            if (botao_pressionado == "r") { // Se o botão pressionador for "s"
+                reiniciar() // Reinicia as variáveis iniciais de acordo com os ajustes do usuário
+            }
+        }
 
         /* Definindo tamanho da imagem Canvas */
         c.setAttribute("width", max_largura);
@@ -65,7 +225,6 @@
         c_forca_bruta.setAttribute("width", max_largura);
         c_forca_bruta.setAttribute("height", max_altura);
 
-
         /* Definindo valores iniciais de variáveis */
         var menor_distancia = [0, 0, c.width + c.height];
         var menor_distancia_todos = [0, 0, c.width + c.height];
@@ -73,18 +232,15 @@
         var menor_distancia_direita = [0, 0, c.width + c.height];
         var menor_distancia_meio = [0, 0, c.width + c.height];
 
-        
-
         /* Variáveis de cor */
         var cor = ["yellow", "yellow", "yellow"];
 
         /* Criando a lista com os pontos aleatórios */
         for (let i = 0; i < numero_de_pontos; ++i) {
-
-            let x = Math.random() * (max_largura - min) + min;
-            let y = Math.random() * (max_altura - min) + min;
-            coordenadas_pontos.push([x, y])
-            mediana_x.push(x)
+            let x = Math.random() * (max_largura - min) + min; // Valor de x aleatório dentro do tamanho do Canvas
+            let y = Math.random() * (max_altura - min) + min; // Valor de y aleatório dentro do tamanho do Canvas
+            coordenadas_pontos.push([x, y]) // Adiciona o ponto com os valores aleatórios gerados para os eixos
+            mediana_x.push(x) // Adiciona o eixo x do ponto a lista pra calcular a mediana
         }
 
         /* Ordenando a lista pelo eixo x */
@@ -93,7 +249,6 @@
         /* Encontrando a mediana do eixo x dos pontos */
         mediana_x.sort((a, b) => a - b);
         centro_comprimento_x = mediana_x.length / 2
-
         if ((mediana_x.length % 2) == 0) {
             mediana_x = (mediana_x[centro_comprimento_x] + mediana_x[(centro_comprimento_x - 1)]) / 2
         } else {
@@ -117,9 +272,65 @@
         var pontos_calcular_todos = lista_pontos_forca_bruta(coordenadas_pontos)
         var tempo_calculo_todos = pontos_calcular_todos.length
 
+        /* Função que reinicia os valores globais para reiniciar a animação do algoritmo */
+        function reiniciar() {
+            /* Reiniciando valores iniciais de variáveis */
+            coordenadas_pontos = [];
+            mediana_x = [];
+            tempo = 0
+            menor_distancia = [0, 0, c.width + c.height];
+            menor_distancia_todos = [0, 0, c.width + c.height];
+            menor_distancia_esquerda = [0, 0, c.width + c.height];
+            menor_distancia_direita = [0, 0, c.width + c.height];
+            menor_distancia_meio = [0, 0, c.width + c.height];
+
+
+
+            /* Variáveis de cor */
+            cor = ["yellow", "yellow", "yellow"];
+
+            /* Criando a lista com os pontos aleatórios */
+            for (let i = 0; i < numero_de_pontos; ++i) {
+                let x = Math.random() * (max_largura - min) + min; // Valor de x aleatório dentro do tamanho do Canvas
+                let y = Math.random() * (max_altura - min) + min; // Valor de y aleatório dentro do tamanho do Canvas
+                coordenadas_pontos.push([x, y]) // Adiciona o ponto com os valores aleatórios gerados para os eixos
+                mediana_x.push(x) // Adiciona o eixo x do ponto a lista pra calcular a mediana
+            }
+
+            /* Ordenando a lista pelo eixo x */
+            coordenadas_pontos.sort((a, b) => a[0] - b[0]);
+
+            /* Encontrando a mediana do eixo x dos pontos */
+            mediana_x.sort((a, b) => a - b);
+            centro_comprimento_x = mediana_x.length / 2
+            if ((mediana_x.length % 2) == 0) {
+                mediana_x = (mediana_x[centro_comprimento_x] + mediana_x[(centro_comprimento_x - 1)]) / 2
+            } else {
+                mediana_x = mediana_x[Math.ceil(centro_comprimento_x)]
+            }
+
+            /* Lista de pontos para o "calculo na força bruta" de cada lado da mediana */
+            coordenadas_pontos_esquerda = coordenadas_pontos.slice(0, Math.floor(coordenadas_pontos.length / 2))
+            coordenadas_pontos_direita = coordenadas_pontos.slice(Math.ceil(coordenadas_pontos.length / 2), coordenadas_pontos.length)
+
+            /* Lista de pares de pontos para o "calculo na força bruta" de cada lado da mediana */
+            pontos_calcular_esquerda = lista_pontos_forca_bruta(coordenadas_pontos_esquerda)
+            pontos_calcular_direita = lista_pontos_forca_bruta(coordenadas_pontos_direita)
+
+            /* Tempo de "calculo na força bruto" de cada lado da mediana */
+            tempo_calculo_esquerda = pontos_calcular_esquerda.length
+            tempo_calculo_direita = pontos_calcular_direita.length
+
+            /* Lista e tempo para "calcular na força bruta" todos os pontos */
+            pontos_calcular_todos = lista_pontos_forca_bruta(coordenadas_pontos)
+            tempo_calculo_todos = pontos_calcular_todos.length
+        }
+
+
 
         /* Função principal do programa, para animar o algoritmo */
         function animar() {
+
             /* Apaga a tela e desenha todos os pontos do Canvas */
             ctx.clearRect(0, 0, c.width, c.height); // Apaga todo o desenho para desenar o próximo "frame"
             desenhar_todos_os_pontos() // Desenha todos os pontos a cada atualização
@@ -132,7 +343,7 @@
                 /* Desenha a linha da mediana*/
                 desenhar_linha([mediana_x, 0], [mediana_x, c.height], "gray", "solid", 1);
 
-
+                /* As etapas finais da animação de dividir e conquistar foram trazidas para o começo para o quadriculado ficar no fundo */
                 if (tempo > tempo_calculo_direita + tempo_calculo_esquerda + 2) {
                     /* Desenha as linhas verticais */
                     for (i = -1; i <= 1; i += 0.5) {
@@ -142,7 +353,6 @@
 
                     /* Desenha as linhas horizontais */
                     for (i = 1; i <= (c.height / (menor_distancia[2] / 2)); i += 1) {
-
                         let distancia_y_linha = (menor_distancia[2] / 2) * i
                         desenhar_linha([mediana_x - menor_distancia[2], distancia_y_linha], [mediana_x + menor_distancia[2], distancia_y_linha], "gray", "solid", 1);
 
@@ -167,7 +377,6 @@
 
                     /* Cria a lista com os pares de pontos para verificar na faixa de interesse central */
                     for (let i = 0; i < pontos_y_filtrados.length; i += 1) {
-
                         for (let j = 1; j <= 7; j += 1) {
                             if (((i + j) < pontos_y_filtrados.length)) {
                                 mesmo_lado_mediana = ((pontos_y_filtrados[i + j][0] - mediana_x) >= 0) === ((pontos_y_filtrados[i][0] - mediana_x) >= 0)
@@ -188,14 +397,12 @@
                             menor_distancia_meio = [lista_calcular_pontos_centro[numero_do_par][0], lista_calcular_pontos_centro[numero_do_par][1], distancia]
                         }
                     }
+                    desenhar_conexao(menor_distancia_meio[0], menor_distancia_meio[1], cor[2]) // Desenha a conexão dos pontos mais próximos da faixa de interesse central
 
-                    desenhar_conexao(menor_distancia_meio[0], menor_distancia_meio[1], cor[2])
-
+                    // Atualiza as cores caso a distancia da faixa de interesse central seja a menor distância
                     if (menor_distancia_meio[2] < menor_distancia[2]) {
                         cor = ["yellow", "yellow", "green"]
                     }
-
-                    
                 }
 
                 /* Acha a menor distância dos pontos na esquerda na "força bruta" e anima o processo */
@@ -203,6 +410,7 @@
                     let posicao = tempo
                     let distancia = conexao_distancia(pontos_calcular_esquerda[posicao][0], pontos_calcular_esquerda[posicao][1], "red");
 
+                    /* Atualiza a menor distância caso necessário */
                     if (distancia < menor_distancia_esquerda[2]) {
                         menor_distancia_esquerda = [pontos_calcular_esquerda[posicao][0], pontos_calcular_esquerda[posicao][1], distancia]
                         menor_distancia = menor_distancia_esquerda
@@ -215,13 +423,14 @@
                     let posicao = tempo - tempo_calculo_esquerda
                     let distancia = conexao_distancia(pontos_calcular_direita[posicao][0], pontos_calcular_direita[posicao][1], "red");
 
+                    /* Atualiza a menor distância caso necessário */
                     if (distancia < menor_distancia_direita[2]) {
                         menor_distancia_direita = [pontos_calcular_direita[posicao][0], pontos_calcular_direita[posicao][1], distancia]
                         menor_distancia = menor_distancia_direita
                     }
                 }
                 if (tempo > tempo_calculo_esquerda) {
-                    desenhar_conexao(menor_distancia_direita[0], menor_distancia_direita[1], cor[1])
+                    desenhar_conexao(menor_distancia_direita[0], menor_distancia_direita[1], cor[1]) // Desenha a conexão do par mais próximo da direita
                 }
 
                 /* Descobre a menor distância entre a menor da esquerda e a menor da direita, altera a cor das conexões e atualiza a menor distância */
@@ -236,22 +445,20 @@
                 }
 
                 /* Escreve a menor distância atual */
-                menor_distancia_dividir.textContent = "Menor distancia (metodo de dividir e conquistar): " + Math.round(menor_distancia[2] * 100) /100
-
+                menor_distancia_dividir.textContent = "Menor distancia: " + Math.round(menor_distancia[2] * 100) / 100
 
                 /* Acha a menor distância dos pontos na esquerda na "força bruta" e anima o processo */
                 if (tempo < tempo_calculo_todos) {
                     let posicao = tempo
                     let distancia = conexao_distancia(pontos_calcular_todos[posicao][0], pontos_calcular_todos[posicao][1], "red", ctx_forca_bruta);
 
+                    /* Atualiza a menor distância caso necessário */
                     if (distancia < menor_distancia_todos[2]) {
                         menor_distancia_todos = [pontos_calcular_todos[posicao][0], pontos_calcular_todos[posicao][1], distancia]
                     }
                 }
-                desenhar_conexao(menor_distancia_todos[0], menor_distancia_todos[1], "green", ctx_forca_bruta)
-                menor_distancia_forca.textContent = "Menor distancia (metodo de força bruta): " + Math.round(menor_distancia_todos[2] * 100) /100
-
-
+                desenhar_conexao(menor_distancia_todos[0], menor_distancia_todos[1], "green", ctx_forca_bruta) // Desenha a conexão do par mais próximo
+                menor_distancia_forca.textContent = "Menor distancia: " + Math.round(menor_distancia_todos[2] * 100) / 100 // Imprime a menor distancia
             }
 
             /* Controle de tempo da função de animação */
@@ -267,7 +474,7 @@
                     lista_pares_de_pontos.push([lista_pontos[i], lista_pontos[i + j]])
                 }
             }
-            return lista_pares_de_pontos
+            return lista_pares_de_pontos // Retorna a lista de pontos
         }
 
         /* Função que desenha todos os pontos gerados */
@@ -280,11 +487,14 @@
 
         /* Função que desenha uma linha entre dois pontos */
         function desenhar_linha(inicio, fim, cor, estilo, espessura, contexto = ctx) {
+            // Verifica o tipo de linha especificado e altera o tipo
             if (estilo == "dashed") {
                 contexto.setLineDash([5, 5]);
             } else {
                 contexto.setLineDash([]);
             }
+
+            // Cria a conexão do ponto inicial ao ponto final, com a cor e a espessura especificada, no Canvas especificado
             contexto.beginPath()
             contexto.lineWidth = espessura;
             contexto.moveTo(inicio[0], inicio[1]);
@@ -295,6 +505,7 @@
 
         /* Função para pintar um único ponto */
         function pintar_ponto(ponto, cor, contexto = ctx) {
+            // Desenha o ponto da cor especificada, no Canvas especificado
             contexto.beginPath();
             contexto.arc(ponto[0], ponto[1], 5, 0, 2 * Math.PI);
             contexto.fillStyle = cor;
@@ -302,25 +513,24 @@
 
         }
 
-        /* Função para desenhar uma conexao entre dois pontos - Pintá-los e desenhar a linha entre eles */
+        /* Função para desenhar uma conexão entre dois pontos - Pintá-los e desenhar a linha entre eles */
         function desenhar_conexao(ponto1, ponto2, cor, contexto = ctx) {
-            pintar_ponto(ponto1, cor, contexto);
-            pintar_ponto(ponto2, cor, contexto);
-            desenhar_linha(ponto1, ponto2, cor, "solid", 2, contexto)
+            pintar_ponto(ponto1, cor, contexto); // Desenha o primeiro ponto
+            pintar_ponto(ponto2, cor, contexto); // Desenha o segundo ponto
+            desenhar_linha(ponto1, ponto2, cor, "solid", 2, contexto) // Desenha a linha de conexão
         }
 
         /* Função para calcular a distância entre dois pontos e retorná-la */
         function calcular_distancia(ponto1, ponto2) {
-            return Math.sqrt(Math.pow((ponto1[0] - ponto2[0]), 2) + Math.pow((ponto1[1] - ponto2[1]), 2))
+            return Math.sqrt(Math.pow((ponto1[0] - ponto2[0]), 2) + Math.pow((ponto1[1] - ponto2[1]), 2)) // Retorna a distância, por pitágoras
         }
 
+        /* Função para desenhar a conexão entre dois pontos, pintar os pontos e retornar a distância entre eles */
         function conexao_distancia(ponto1, ponto2, cor, contexto = ctx) {
-            desenhar_conexao(ponto1, ponto2, "red", contexto)
-            return calcular_distancia(ponto1, ponto2, contexto)
+            desenhar_conexao(ponto1, ponto2, "red", contexto) // Desenha a conexão
+            return calcular_distancia(ponto1, ponto2, contexto) // Calcula e retorna a distância calculada
         }
 
-        /* Chama a função para animar o algoritmo*/
-        animar();
     </script>
 
 </body>
